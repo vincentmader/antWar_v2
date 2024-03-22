@@ -9,6 +9,15 @@ impl Velocity {
     fn get_angle(&self) -> f32 {
         self.0.y.atan2(self.0.x)
     }
+
+    fn bounce_rotate(&mut self, normal: Vec3) -> Quat {
+        let new_velocity = self.0 - 2. * normal * self.0;
+
+        let rotation = Quat::from_rotation_arc(self.0.normalize(), new_velocity.normalize());
+        *self = Velocity(new_velocity);
+
+        rotation
+    }
 }
 
 fn main() {
@@ -87,25 +96,38 @@ fn confine_ant_movement(
 
         let x = transform.translation.x;
         let y = transform.translation.y;
-        let direction_now = velocity.get_angle();
+        // let direction_now = velocity.get_angle();
 
         if x < -window.width() / 2.0 + 20.0 {
-            let i = -PI / 2.0 - direction_now;
-            velocity.0.x = -velocity.0.x;
-            transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
+            // let i = -PI / 2.0 - direction_now;
+            // velocity.0.x = -velocity.0.x;
+            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
+            let rot = velocity.bounce_rotate(Vec3::X);
+            transform.rotate(rot);
+
+            transform.translation.x = -transform.translation.x - window.width() + 40.;
         } else if x > window.width() / 2.0 - 20.0 {
-            let i = PI / 2.0 - direction_now;
-            velocity.0.x = -velocity.0.x;
-            transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
+            // let i = PI / 2.0 - direction_now;
+            // velocity.0.x = -velocity.0.x;
+            // // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
+            let rot = velocity.bounce_rotate(Vec3::X);
+            transform.rotate(rot);
+            transform.translation.x = -transform.translation.x + window.width() - 40.;
         }
         if y < -window.height() / 2.0 + 20.0 {
-            let i = direction_now - PI;
-            velocity.0.y = -velocity.0.y;
-            transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
+            // let i = direction_now - PI;
+            // velocity.0.y = -velocity.0.y;
+            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
+            let rot = velocity.bounce_rotate(Vec3::Y);
+            transform.rotate(rot);
+            transform.translation.y = -transform.translation.y - window.height() + 40.;
         } else if y > window.height() / 2.0 - 20.0 {
-            let i = direction_now;
-            velocity.0.y = -velocity.0.y;
-            transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
+            // let i = direction_now;
+            // velocity.0.y = -velocity.0.y;
+            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
+            let rot = velocity.bounce_rotate(Vec3::Y);
+            transform.rotate(rot);
+            transform.translation.y = -transform.translation.y + window.height() - 40.;
         }
     }
 }
