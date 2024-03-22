@@ -31,21 +31,23 @@ fn setup(
 
     let sprite_size = Vec2 { x: 40.0, y: 40.0 };
     let initial_position = Vec3::default();
-    let initial_rotation = -0.25 * std::f32::consts::PI;
-    let initial_direction = Direction(Vec3 {
-        x: 300.0,
-        y: 300.0,
-        z: 0.0,
-    });
 
     commands.spawn(Camera2dBundle::default());
     for _ in 0..100 {
+        let initial_speed = 250.0;
+        let initial_rotation = 2.0 * PI * rand::random::<f32>();
+        let initial_velocity = Direction(Vec3 {
+            x: initial_speed * initial_rotation.cos(),
+            y: initial_speed * initial_rotation.sin(),
+            z: 0.0,
+        });
+
         commands.spawn((
             SpriteBundle {
                 texture: asset_server.load("img/ant.png"),
                 transform: Transform {
                     translation: initial_position,
-                    rotation: Quat::from_rotation_z(initial_rotation),
+                    rotation: Quat::from_rotation_z(initial_rotation - PI / 2.0),
                     ..default()
                 },
                 sprite: Sprite {
@@ -54,24 +56,24 @@ fn setup(
                 },
                 ..default()
             },
-            initial_direction.clone(),
+            initial_velocity.clone(),
         ));
     }
 }
 
 fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, &mut Transform)>) {
-    for (mut direction, mut transform) in &mut sprite_position {
-        transform.translation.x += direction.0.x * time.delta_seconds();
-        transform.translation.y += direction.0.y * time.delta_seconds();
-        transform.translation.z += direction.0.z * time.delta_seconds();
+    for (mut velocity, mut transform) in &mut sprite_position {
+        transform.translation.x += velocity.0.x * time.delta_seconds();
+        transform.translation.y += velocity.0.y * time.delta_seconds();
+        transform.translation.z += velocity.0.z * time.delta_seconds();
 
-        let l = direction.0.length();
-        let c = direction.get_angle();
-        let a = c + (rand::random::<f32>() - 0.5) * PI / 12.0;
-        direction.0.x = l * a.cos();
-        direction.0.y = l * a.sin();
+        let speed = velocity.0.length();
+        let direction_now = velocity.get_angle();
+        let direction_next = direction_now + (rand::random::<f32>() - 0.5) * PI / 12.0;
+        velocity.0.x = speed * direction_next.cos();
+        velocity.0.y = speed * direction_next.sin();
 
-        transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), a - c));
+        transform.rotate(Quat::from_rotation_z(direction_next - direction_now));
     }
 }
 
@@ -79,29 +81,29 @@ fn confine_player_movement(
     mut player_query: Query<(&mut Direction, &mut Transform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (mut direction, mut transform) in &mut player_query {
+    for (mut velocity, mut transform) in &mut player_query {
         let window = window_query.get_single().unwrap();
 
         let x = transform.translation.x;
         let y = transform.translation.y;
-        let a = direction.get_angle();
+        let direction_now = velocity.get_angle();
 
         if x < -window.width() / 2.0 + 20.0 {
-            let i = -PI / 2.0 - a;
-            direction.0.x = -direction.0.x;
+            let i = -PI / 2.0 - direction_now;
+            velocity.0.x = -velocity.0.x;
             transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
         } else if x > window.width() / 2.0 - 20.0 {
-            let i = PI / 2.0 - a;
-            direction.0.x = -direction.0.x;
+            let i = PI / 2.0 - direction_now;
+            velocity.0.x = -velocity.0.x;
             transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
         }
         if y < -window.height() / 2.0 + 20.0 {
-            let i = a - PI;
-            direction.0.y = -direction.0.y;
+            let i = direction_now - PI;
+            velocity.0.y = -velocity.0.y;
             transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
         } else if y > window.height() / 2.0 - 20.0 {
-            let i = a;
-            direction.0.y = -direction.0.y;
+            let i = direction_now;
+            velocity.0.y = -velocity.0.y;
             transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
         }
     }
