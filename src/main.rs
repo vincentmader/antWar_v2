@@ -1,6 +1,4 @@
-use bevy::{
-    prelude::*, reflect::erased_serde::__private::serde::__private::de, window::PrimaryWindow,
-};
+use bevy::{prelude::*, window::PrimaryWindow};
 use std::f32::consts::PI;
 
 const BACKGROUND_COLOR: Color = Color::rgba(1.0, 1.0, 1.0, 1.0);
@@ -10,34 +8,6 @@ struct Direction(Vec3);
 impl Direction {
     fn get_angle(&self) -> f32 {
         self.0.y.atan2(self.0.x)
-    }
-}
-impl Direction {
-    fn get_bounce_angle(&self, wall: &Vec3) -> Quat {
-        let v = self.0;
-        let n = wall.normalize();
-
-        let u_x = Vec3 {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        };
-        let u_y = Vec3 {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        };
-        let u_z = Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        };
-
-        let q = v - 2.0 * v.dot(n) * n;
-        let a_x = (q.dot(u_x) / (u_x.length() * q.length())).acos();
-        let a_y = (q.dot(u_y) / (u_y.length() * q.length())).acos();
-        let a_z = (q.dot(u_z) / (u_z.length() * q.length())).acos();
-        Quat::from_rotation_x(a_x) //* Quat::from_rotation_y(a_y) * Quat::from_rotation_z(a_z)
     }
 }
 
@@ -57,16 +27,12 @@ fn setup(
     asset_server: Res<AssetServer>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let window = window_query.get_single().unwrap();
-    let width = window.width();
-    let height = window.height();
-    let z_axis = Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: 1.0,
-    };
+    let _window = window_query.get_single().unwrap();
 
-    let direction = Direction(Vec3 {
+    let sprite_size = Vec2 { x: 40.0, y: 40.0 };
+    let initial_position = Vec3::default();
+    let initial_rotation = -0.25 * std::f32::consts::PI;
+    let initial_direction = Direction(Vec3 {
         x: 300.0,
         y: 300.0,
         z: 0.0,
@@ -78,21 +44,17 @@ fn setup(
             SpriteBundle {
                 texture: asset_server.load("img/ant.png"),
                 transform: Transform {
-                    translation: Vec3 {
-                        x: 0.0,
-                        y: 0.0,
-                        z: 0.0,
-                    },
-                    rotation: Quat::from_rotation_z(-0.25 * std::f32::consts::PI),
+                    translation: initial_position,
+                    rotation: Quat::from_rotation_z(initial_rotation),
                     ..default()
                 },
                 sprite: Sprite {
-                    custom_size: Some(Vec2 { x: 40.0, y: 40.0 }),
+                    custom_size: Some(sprite_size),
                     ..default()
                 },
                 ..default()
             },
-            direction.clone(),
+            initial_direction.clone(),
         ));
     }
 }

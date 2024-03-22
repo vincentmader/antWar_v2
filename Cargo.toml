@@ -1,5 +1,5 @@
 [package]
-name = "antWar"
+name = "ant-war"
 version = "0.1.0"
 edition = "2021"
 
