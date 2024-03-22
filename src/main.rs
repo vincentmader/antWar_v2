@@ -4,8 +4,8 @@ use std::f32::consts::PI;
 const BACKGROUND_COLOR: Color = Color::rgba(1.0, 1.0, 1.0, 1.0);
 
 #[derive(Component, Clone)]
-struct Direction(Vec3);
-impl Direction {
+struct Velocity(Vec3);
+impl Velocity {
     fn get_angle(&self) -> f32 {
         self.0.y.atan2(self.0.x)
     }
@@ -16,8 +16,8 @@ fn main() {
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, sprite_movement)
-        .add_systems(Update, confine_player_movement)
+        .add_systems(Update, ant_movement)
+        .add_systems(Update, confine_ant_movement)
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }
@@ -37,7 +37,7 @@ fn setup(
         let ant_size = 30.0 + 15.0 * rand::random::<f32>();
         let initial_speed = 250.0;
         let initial_rotation = 2.0 * PI * rand::random::<f32>();
-        let initial_velocity = Direction(Vec3 {
+        let initial_velocity = Velocity(Vec3 {
             x: initial_speed * initial_rotation.cos(),
             y: initial_speed * initial_rotation.sin(),
             z: 0.0,
@@ -62,7 +62,7 @@ fn setup(
     }
 }
 
-fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, &mut Transform)>) {
+fn ant_movement(time: Res<Time>, mut sprite_position: Query<(&mut Velocity, &mut Transform)>) {
     for (mut velocity, mut transform) in &mut sprite_position {
         transform.translation.x += velocity.0.x * time.delta_seconds();
         transform.translation.y += velocity.0.y * time.delta_seconds();
@@ -78,8 +78,8 @@ fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, 
     }
 }
 
-fn confine_player_movement(
-    mut player_query: Query<(&mut Direction, &mut Transform)>,
+fn confine_ant_movement(
+    mut player_query: Query<(&mut Velocity, &mut Transform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     for (mut velocity, mut transform) in &mut player_query {
