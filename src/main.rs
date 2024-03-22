@@ -29,11 +29,12 @@ fn setup(
 ) {
     let _window = window_query.get_single().unwrap();
 
-    let sprite_size = Vec2 { x: 40.0, y: 40.0 };
+    let sprite_size = Vec2 { x: 1.0, y: 1.0 };
     let initial_position = Vec3::default();
 
     commands.spawn(Camera2dBundle::default());
     for _ in 0..100 {
+        let ant_size = 30.0 + 15.0 * rand::random::<f32>();
         let initial_speed = 250.0;
         let initial_rotation = 2.0 * PI * rand::random::<f32>();
         let initial_velocity = Direction(Vec3 {
@@ -51,7 +52,7 @@ fn setup(
                     ..default()
                 },
                 sprite: Sprite {
-                    custom_size: Some(sprite_size),
+                    custom_size: Some(sprite_size * ant_size),
                     ..default()
                 },
                 ..default()
