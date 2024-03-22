@@ -1,24 +1,11 @@
-use bevy::{prelude::*, window::PrimaryWindow};
 use std::f32::consts::PI;
 
+use bevy::{prelude::*, window::PrimaryWindow};
+
+mod velocity;
+use velocity::Velocity;
+
 const BACKGROUND_COLOR: Color = Color::rgba(1.0, 1.0, 1.0, 1.0);
-
-#[derive(Component, Clone)]
-struct Velocity(Vec3);
-impl Velocity {
-    fn get_angle(&self) -> f32 {
-        self.0.y.atan2(self.0.x)
-    }
-
-    fn bounce_rotate(&mut self, normal: Vec3) -> Quat {
-        let new_velocity = self.0 - 2. * normal * self.0;
-
-        let rotation = Quat::from_rotation_arc(self.0.normalize(), new_velocity.normalize());
-        *self = Velocity(new_velocity);
-
-        rotation
-    }
-}
 
 fn main() {
     App::new()
@@ -49,7 +36,7 @@ fn setup(
 
     for _ in 0..100 {
         let ant_size = 30.0 + 15.0 * rand::random::<f32>();
-        let initial_speed = 250.0;
+        let initial_speed = 200.0 + 100. * rand::random::<f32>();
         let initial_rotation = 2.0 * PI * rand::random::<f32>();
         let initial_velocity = Velocity(Vec3 {
             x: initial_speed * initial_rotation.cos(),
@@ -78,17 +65,12 @@ fn setup(
 
 fn ant_movement(time: Res<Time>, mut sprite_position: Query<(&mut Velocity, &mut Transform)>) {
     for (mut velocity, mut transform) in &mut sprite_position {
-        transform.translation.x += velocity.0.x * time.delta_seconds();
-        transform.translation.y += velocity.0.y * time.delta_seconds();
-        transform.translation.z += velocity.0.z * time.delta_seconds();
+        transform.translation += velocity.0 * time.delta_seconds();
 
-        let speed = velocity.0.length();
-        let direction_now = velocity.get_angle();
-        let direction_next = direction_now + (rand::random::<f32>() - 0.5) * PI / 12.0;
-        velocity.0.x = speed * direction_next.cos();
-        velocity.0.y = speed * direction_next.sin();
-
-        transform.rotate(Quat::from_rotation_z(direction_next - direction_now));
+        let da = (rand::random::<f32>() - 0.5) * PI / 12.;
+        let rotation = Quat::from_rotation_z(da);
+        transform.rotate(rotation);
+        velocity.rotate(rotation);
     }
 }
 
@@ -101,35 +83,22 @@ fn confine_ant_movement(
 
         let x = transform.translation.x;
         let y = transform.translation.y;
-        // let direction_now = velocity.get_angle();
 
         if x < -window.width() / 2.0 + 20.0 {
-            // let i = -PI / 2.0 - direction_now;
-            // velocity.0.x = -velocity.0.x;
-            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
             let rot = velocity.bounce_rotate(Vec3::X);
             transform.rotate(rot);
 
             transform.translation.x = -transform.translation.x - window.width() + 40.;
         } else if x > window.width() / 2.0 - 20.0 {
-            // let i = PI / 2.0 - direction_now;
-            // velocity.0.x = -velocity.0.x;
-            // // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 2.0 * i));
             let rot = velocity.bounce_rotate(Vec3::X);
             transform.rotate(rot);
             transform.translation.x = -transform.translation.x + window.width() - 40.;
         }
         if y < -window.height() / 2.0 + 20.0 {
-            // let i = direction_now - PI;
-            // velocity.0.y = -velocity.0.y;
-            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
             let rot = velocity.bounce_rotate(Vec3::Y);
             transform.rotate(rot);
             transform.translation.y = -transform.translation.y - window.height() + 40.;
         } else if y > window.height() / 2.0 - 20.0 {
-            // let i = direction_now;
-            // velocity.0.y = -velocity.0.y;
-            // transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), -2.0 * i));
             let rot = velocity.bounce_rotate(Vec3::Y);
             transform.rotate(rot);
             transform.translation.y = -transform.translation.y + window.height() - 40.;
