@@ -25,8 +25,12 @@ fn main() {
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, ant_movement)
-        .add_systems(Update, confine_ant_movement)
+        // .add_systems(Update, ant_movement)
+        // .add_systems(Update, confine_ant_movement)
+        .add_systems(
+            Update,
+            (ant_movement, confine_ant_movement.after(ant_movement)),
+        )
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }
@@ -42,6 +46,7 @@ fn setup(
     let initial_position = Vec3::default();
 
     commands.spawn(Camera2dBundle::default());
+
     for _ in 0..100 {
         let ant_size = 30.0 + 15.0 * rand::random::<f32>();
         let initial_speed = 250.0;
