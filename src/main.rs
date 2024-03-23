@@ -121,7 +121,7 @@ fn setup(
             Speed(initial_speed),
             Age(0.0),
             Player::Natural,
-            VisionDistance(100.0),
+            VisionDistance(50.0),
         ));
     }
 
