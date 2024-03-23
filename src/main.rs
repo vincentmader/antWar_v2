@@ -5,19 +5,25 @@ use bevy::{prelude::*, window::PrimaryWindow};
 mod velocity;
 use velocity::Velocity;
 
+mod players;
+
 const BACKGROUND_COLOR: Color = Color::rgba(1.0, 1.0, 1.0, 1.0);
+
+#[derive(Component)]
+enum Player {
+    Random,
+}
+
+enum AntAction {
+    Rotate(Quat),
+}
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        // .add_systems(Update, ant_movement)
-        // .add_systems(Update, confine_ant_movement)
-        .add_systems(
-            Update,
-            (ant_movement, confine_ant_movement.after(ant_movement)),
-        )
+        .add_systems(Update, (ant_action, confine_ant_movement.after(ant_action)))
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }
@@ -34,7 +40,7 @@ fn setup(
 
     commands.spawn(Camera2dBundle::default());
 
-    for _ in 0..100 {
+    for _ in 0..500 {
         let ant_size = 30.0 + 15.0 * rand::random::<f32>();
         let initial_speed = 200.0 + 100. * rand::random::<f32>();
         let initial_rotation = 2.0 * PI * rand::random::<f32>();
@@ -59,18 +65,27 @@ fn setup(
                 ..default()
             },
             initial_velocity.clone(),
+            Player::Random,
         ));
     }
 }
 
-fn ant_movement(time: Res<Time>, mut sprite_position: Query<(&mut Velocity, &mut Transform)>) {
-    for (mut velocity, mut transform) in &mut sprite_position {
-        transform.translation += velocity.0 * time.delta_seconds();
+fn ant_action(time: Res<Time>, mut ant_data: Query<(&mut Velocity, &mut Transform, &Player)>) {
+    for (mut velocity, mut transform, player) in &mut ant_data {
+        let action = match player {
+            Player::Random => players::Random::ant_action(&velocity.0),
+        };
 
-        let da = (rand::random::<f32>() - 0.5) * PI / 12.;
-        let rotation = Quat::from_rotation_z(da);
-        transform.rotate(rotation);
-        velocity.rotate(rotation);
+        // TODO: verify action??
+
+        match action {
+            AntAction::Rotate(rotation) => {
+                transform.rotate(rotation);
+                velocity.rotate(rotation);
+
+                transform.translation += velocity.0 * time.delta_seconds();
+            }
+        }
     }
 }
 
