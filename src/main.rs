@@ -71,52 +71,58 @@ fn setup(
 }
 
 fn ant_action(time: Res<Time>, mut ant_data: Query<(&mut Velocity, &mut Transform, &Player)>) {
-    for (mut velocity, mut transform, player) in &mut ant_data {
-        let action = match player {
-            Player::Random => players::Random::ant_action(&velocity.0),
-        };
+    ant_data
+        .par_iter_mut()
+        .for_each(|(mut velocity, mut transform, player)| {
+            let action = match player {
+                Player::Random => players::Random::ant_action(&velocity.0),
+            };
 
-        // TODO: verify action??
+            // TODO: verify action??
 
-        match action {
-            AntAction::Rotate(rotation) => {
-                transform.rotate(rotation);
-                velocity.rotate(rotation);
+            match action {
+                AntAction::Rotate(rotation) => {
+                    transform.rotate(rotation);
+                    velocity.rotate(rotation);
 
-                transform.translation += velocity.0 * time.delta_seconds();
+                    transform.translation += velocity.0 * time.delta_seconds();
+                }
             }
-        }
-    }
+        });
 }
 
 fn confine_ant_movement(
-    mut player_query: Query<(&mut Velocity, &mut Transform)>,
+    mut ant_query: Query<(&mut Velocity, &mut Transform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (mut velocity, mut transform) in &mut player_query {
-        let window = window_query.get_single().unwrap();
+    let window = window_query.get_single().unwrap();
+    let width = window.width();
+    let height = window.height();
 
-        let x = transform.translation.x;
-        let y = transform.translation.y;
+    ant_query
+        .par_iter_mut()
+        .for_each(|(mut velocity, mut transform)| {
+            let x = transform.translation.x;
+            let y = transform.translation.y;
 
-        if x < -window.width() / 2.0 + 20.0 {
-            let rot = velocity.bounce_rotate(Vec3::X);
-            transform.rotate(rot);
+            if x < -width / 2.0 + 20.0 {
+                let rot = velocity.bounce_rotate(Vec3::X);
+                transform.rotate(rot);
 
-            transform.translation.x = -transform.translation.x - window.width() + 40.;
-        } else if x > window.width() / 2.0 - 20.0 {
-            let rot = velocity.bounce_rotate(Vec3::X);
-            transform.rotate(rot);
-            transform.translation.x = -transform.translation.x + window.width() - 40.;
-        }
-        if y < -window.height() / 2.0 + 20.0 {
-            let rot = velocity.bounce_rotate(Vec3::Y);
-            transform.rotate(rot);
-            transform.translation.y = -transform.translation.y - window.height() + 40.;
-        } else if y > window.height() / 2.0 - 20.0 {
-            let rot = velocity.bounce_rotate(Vec3::Y);
-            transform.rotate(rot);
-            transform.translation.y = -transform.translation.y + window.height() - 40.;
-        }
-    }
+                transform.translation.x = -transform.translation.x - width + 40.;
+            } else if x > width / 2.0 - 20.0 {
+                let rot = velocity.bounce_rotate(Vec3::X);
+                transform.rotate(rot);
+                transform.translation.x = -transform.translation.x + width - 40.;
+            }
+            if y < -height / 2.0 + 20.0 {
+                let rot = velocity.bounce_rotate(Vec3::Y);
+                transform.rotate(rot);
+                transform.translation.y = -transform.translation.y - height + 40.;
+            } else if y > height / 2.0 - 20.0 {
+                let rot = velocity.bounce_rotate(Vec3::Y);
+                transform.rotate(rot);
+                transform.translation.y = -transform.translation.y + height - 40.;
+            }
+        });
 }
