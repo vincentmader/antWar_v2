@@ -1,0 +1,28 @@
+Ant Properties:
+- [ ] Movement Speed
+- [ ] Carrying Capacity
+- [ ] Vision Radius
+- [ ] Fighting Strength
+- [ ] Physical Endurance
+- [ ] Pheromone Lifetime
+- [ ] Fertility (isQueen?)
+- [ ] Courage
+- [ ] Size
+- [ ] Memory
+
+Ant Classes: (per player)
+- Worker
+- Soldier
+- Queen
+
+Ideas:
+
+Next TODOs:
+- [ ] Ant Hill
+  + Queen lives there
+- [ ] pick up food
+- [ ] bring food to ant hill
+
+Natural Player
+- [ ] follow pheromones
+- [ ] drop correct pheromones (food, enemy...)
