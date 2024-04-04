@@ -1,12 +1,19 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    asset::Handle,
-    input::keyboard::KeyboardInput,
-    input::mouse::{MouseScrollUnit, MouseWheel},
-    input::ButtonState,
+
+    core::TaskPoolThreadAssignmentPolicy,
+    input::{
+        keyboard::KeyboardInput,
+        mouse::{MouseScrollUnit, MouseWheel},
+        ButtonState,
+    },
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    tasks::available_parallelism,
+
+    asset::Handle,
+
     window::PrimaryWindow,
 };
 
@@ -61,8 +68,18 @@ enum AntAction {
 
 fn main() {
     App::new()
+        .add_plugins(DefaultPlugins.set(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions {
+                compute: TaskPoolThreadAssignmentPolicy {
+                    min_threads: available_parallelism(),
+                    max_threads: std::usize::MAX, // unlimited max threads
+                    percent: 1.0,                 // this value is irrelevant in this case
+                },
+                // keep the defaults for everything else
+                ..default()
+            },
+        }))
         .insert_resource(ClearColor(BACKGROUND_COLOR))
-        .add_plugins(DefaultPlugins)
         .init_resource::<WorldSize>()
         .add_systems(Startup, setup)
         .add_systems(Update, (ant_action, confine_ant_movement.after(ant_action)))
@@ -121,6 +138,7 @@ fn setup(
             Speed(initial_speed),
             Age(0.0),
             Player::Natural,
+
             VisionDistance(50.0),
         ));
     }
@@ -243,14 +261,16 @@ fn ant_action(
             let nearby_pheromones: Vec<_> = pheromone_query
                 .iter()
                 .filter_map(|(pheromone, pheromone_transform, pheromone_player)| {
-                    let relative = ant_transform.translation - pheromone_transform.translation;
+
+                    let relative = pheromone_transform.translation - ant_transform.translation;
                     let distance = relative.length();
-                    if distance > vision_distance.0 {
-                        None
-                    } else if relative.angle_between(ant_direction.0).abs() > PI / 4.0 {
-                        None
-                    } else {
+                    if distance < vision_distance.0
+                        && ant_direction.0.angle_between(relative) < PI / 2.0
+                    {
                         Some((*pheromone, ant_player.clone(), relative))
+                    } else {
+                        None
+
                     }
                 })
                 .collect();
@@ -258,14 +278,16 @@ fn ant_action(
             let nearby_food: Vec<_> = food_query
                 .iter()
                 .filter_map(|(food, food_transform)| {
-                    let relative = ant_transform.translation - food_transform.translation;
+
+                    let relative = food_transform.translation - ant_transform.translation;
                     let distance = relative.length();
-                    if distance > vision_distance.0 {
-                        None
-                    } else if relative.angle_between(ant_direction.0).abs() > PI / 2.0 {
-                        None
-                    } else {
+                    if distance < vision_distance.0
+                        && ant_direction.0.angle_between(relative) < PI / 2.0
+                    {
                         Some((*food, relative))
+                    } else {
+                        None
+
                     }
                 })
                 .collect();
@@ -277,7 +299,9 @@ fn ant_action(
                     players::Random::ant_action(&ant_direction.0, &nearby_pheromones, &nearby_food)
                 }
                 Player::Natural => {
-                    players::Natural::ant_action(&ant_direction.0, &nearby_pheromones, &nearby_food)
+
+                    players::Natural::ant_action(ant_direction.0, &nearby_pheromones, &nearby_food)
+
                 }
             };
 
@@ -286,8 +310,6 @@ fn ant_action(
                     ant_transform.rotate(rotation);
                     ant_direction.rotate(rotation);
 
-                    ant_transform.translation +=
-                        ant_direction.0 * ant_speed.0 * time.delta_seconds();
                 }
                 AntAction::Accelerate(speed) => {
                     ant_speed.0 = speed;
@@ -316,6 +338,9 @@ fn ant_action(
                     ));
                 }
             }
+
+            ant_transform.translation += ant_direction.0 * ant_speed.0 * time.delta_seconds();
+
         },
     );
 }
@@ -330,7 +355,10 @@ fn pheromone_removal(mut commands: Commands, query: Query<(Entity, &Age), With<P
     // todo: Add parallelism.
     query
         .into_iter()
-        .filter_map(|(entity, age)| if age.0 > 1.0 { Some(entity) } else { None })
+
+        // .filter_map(|(entity, age)| if age.0 > 3. { Some(entity) } else { None })
+        .filter_map(|(entity, age)| if age.0 > 5. { Some(entity) } else { None })
+
         .for_each(|entity| {
             commands.entity(entity).despawn();
         });
