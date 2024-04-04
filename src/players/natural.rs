@@ -8,7 +8,9 @@ pub struct Natural;
 
 impl Natural {
     pub fn ant_action(
+
         direction: Vec3,
+
         nearby_pheromones: &[(Pheromone, Player, Vec3)],
         nearby_food: &[(Food, Vec3)],
     ) -> AntAction {
@@ -19,6 +21,7 @@ impl Natural {
                 nearest
             }
         });
+
 
         let p = rand::random::<f32>();
 
@@ -62,6 +65,7 @@ impl Natural {
             };
 
             AntAction::Rotate(Quat::from_rotation_z(angle))
+
         } else {
             let p = rand::random::<f32>();
             let pheromone = if p > 0.5 {
