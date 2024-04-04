@@ -8,11 +8,11 @@ pub struct Natural;
 
 impl Natural {
     pub fn ant_action(
-
         direction: Vec3,
 
         nearby_pheromones: &[(Pheromone, Player, Vec3)],
         nearby_food: &[(Food, Vec3)],
+        ant_speed: f32,
     ) -> AntAction {
         let nearest_food = nearby_food.iter().reduce(|nearest, next| {
             if nearest.1.length() > next.1.length() {
@@ -22,6 +22,20 @@ impl Natural {
             }
         });
 
+        if ant_speed == 0.0 {
+            let r: f64 = rand::random();
+            if r > 0.9 {
+                let ant_speed = 200.0 + 100. * rand::random::<f32>();
+                return AntAction::Accelerate(ant_speed);
+            }
+        }
+
+        if let Some(nearest_food) = nearest_food {
+            let distance = nearest_food.1.length();
+            if distance < 20.0 {
+                return AntAction::PickUpFood(1);
+            }
+        }
 
         let p = rand::random::<f32>();
 
@@ -65,7 +79,6 @@ impl Natural {
             };
 
             AntAction::Rotate(Quat::from_rotation_z(angle))
-
         } else {
             let p = rand::random::<f32>();
             let pheromone = if p > 0.5 {

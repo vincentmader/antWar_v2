@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-
+    asset::Handle,
     core::TaskPoolThreadAssignmentPolicy,
     input::{
         keyboard::KeyboardInput,
@@ -11,9 +11,6 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     tasks::available_parallelism,
-
-    asset::Handle,
-
     window::PrimaryWindow,
 };
 
@@ -39,7 +36,19 @@ enum Pheromone {
 
 #[derive(Component, Copy, Clone)]
 enum Food {
-    Fungi,
+    Fungi(u16),
+}
+impl Food {
+    pub fn get_amount(&self) -> u16 {
+        match self {
+            Self::Fungi(amount) => *amount,
+        }
+    }
+    pub fn decrease_amount(&mut self, amount: u16) {
+        *self = match self {
+            Self::Fungi(initial) => Self::Fungi(*initial - amount),
+        }
+    }
 }
 
 #[derive(Component)]
@@ -54,6 +63,11 @@ struct WorldSize(f32, f32);
 #[derive(Component)]
 struct VisionDistance(f32);
 
+#[derive(Component)]
+enum Inventory {
+    Food(u16),
+}
+
 #[derive(Resource)]
 struct ColorHandles {
     red: Handle<ColorMaterial>,
@@ -64,6 +78,8 @@ enum AntAction {
     Rotate(Quat),
     DropPheromone(Pheromone),
     Accelerate(f32),
+    PickUpFood(u16),
+    DropFood(u16),
 }
 
 fn main() {
@@ -87,6 +103,7 @@ fn main() {
         .add_systems(Update, handle_mouse_events)
         .add_systems(Update, increase_age)
         .add_systems(Update, pheromone_removal)
+        .add_systems(Update, food_removal)
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }
@@ -138,8 +155,8 @@ fn setup(
             Speed(initial_speed),
             Age(0.0),
             Player::Natural,
-
             VisionDistance(50.0),
+            Inventory::Food(0),
         ));
     }
 
@@ -150,7 +167,7 @@ fn setup(
             z: -1.0,
         };
         commands.spawn((
-            Food::Fungi,
+            Food::Fungi(200),
             Amount(10.0),
             SpriteBundle {
                 texture: asset_server.load("img/fungus.png"),
@@ -254,14 +271,13 @@ fn ant_action(
     mut meshes: ResMut<Assets<Mesh>>,
     color_handles: Res<ColorHandles>,
     pheromone_query: Query<(&Pheromone, &Transform, &Player)>,
-    food_query: Query<(&Food, &Transform)>,
+    mut food_query: Query<(&mut Food, &Transform)>,
 ) {
     ant_data.iter_mut().for_each(
         |(mut ant_direction, mut ant_speed, mut ant_transform, ant_player, vision_distance)| {
             let nearby_pheromones: Vec<_> = pheromone_query
                 .iter()
                 .filter_map(|(pheromone, pheromone_transform, pheromone_player)| {
-
                     let relative = pheromone_transform.translation - ant_transform.translation;
                     let distance = relative.length();
                     if distance < vision_distance.0
@@ -270,24 +286,35 @@ fn ant_action(
                         Some((*pheromone, ant_player.clone(), relative))
                     } else {
                         None
-
                     }
                 })
                 .collect();
 
-            let nearby_food: Vec<_> = food_query
-                .iter()
+            let mut nearby_food_ref: Vec<_> = food_query
+                .iter_mut()
                 .filter_map(|(food, food_transform)| {
-
                     let relative = food_transform.translation - ant_transform.translation;
                     let distance = relative.length();
                     if distance < vision_distance.0
                         && ant_direction.0.angle_between(relative) < PI / 2.0
                     {
-                        Some((*food, relative))
+                        Some((food, relative))
                     } else {
                         None
+                    }
+                })
+                .collect();
 
+            let nearby_food: Vec<_> = nearby_food_ref
+                .iter()
+                .filter_map(|(food, relative)| {
+                    let distance = relative.length();
+                    if distance < vision_distance.0
+                        && ant_direction.0.angle_between(*relative) < PI / 2.0
+                    {
+                        Some(((*food).clone(), *relative))
+                    } else {
+                        None
                     }
                 })
                 .collect();
@@ -295,21 +322,35 @@ fn ant_action(
             // TODO: verify action??
 
             let action = match ant_player {
-                Player::Random => {
-                    players::Random::ant_action(&ant_direction.0, &nearby_pheromones, &nearby_food)
-                }
-                Player::Natural => {
-
-                    players::Natural::ant_action(ant_direction.0, &nearby_pheromones, &nearby_food)
-
-                }
+                Player::Random => players::Random::ant_action(
+                    &ant_direction.0,
+                    &nearby_pheromones,
+                    &nearby_food,
+                    ant_speed.0,
+                ),
+                Player::Natural => players::Natural::ant_action(
+                    ant_direction.0,
+                    &nearby_pheromones,
+                    &nearby_food,
+                    ant_speed.0,
+                ),
             };
 
             match action {
+                AntAction::PickUpFood(amount) => {
+                    nearby_food_ref.iter_mut().for_each(|(food, relative)| {
+                        let amount = amount.min(food.get_amount());
+                        if relative.length() < 10.0 && amount > 0 {
+                            println!("{}", food.get_amount());
+                            food.decrease_amount(amount);
+                            *ant_speed = Speed(0.0);
+                        }
+                    })
+                }
+                AntAction::DropFood(amount) => {}
                 AntAction::Rotate(rotation) => {
                     ant_transform.rotate(rotation);
                     ant_direction.rotate(rotation);
-
                 }
                 AntAction::Accelerate(speed) => {
                     ant_speed.0 = speed;
@@ -340,7 +381,6 @@ fn ant_action(
             }
 
             ant_transform.translation += ant_direction.0 * ant_speed.0 * time.delta_seconds();
-
         },
     );
 }
@@ -351,14 +391,29 @@ fn increase_age(time: Res<Time>, mut query: Query<&mut Age>) {
     });
 }
 
+fn food_removal(mut commands: Commands, query: Query<(Entity, &Food)>) {
+    // todo: Add parallelism.
+    query
+        .into_iter()
+        // .filter_map(|(entity, age)| if age.0 > 3. { Some(entity) } else { None })
+        .filter_map(|(entity, food)| {
+            if food.get_amount() == 0 {
+                Some(entity)
+            } else {
+                None
+            }
+        })
+        .for_each(|entity| {
+            commands.entity(entity).despawn();
+        });
+}
+
 fn pheromone_removal(mut commands: Commands, query: Query<(Entity, &Age), With<Pheromone>>) {
     // todo: Add parallelism.
     query
         .into_iter()
-
         // .filter_map(|(entity, age)| if age.0 > 3. { Some(entity) } else { None })
         .filter_map(|(entity, age)| if age.0 > 5. { Some(entity) } else { None })
-
         .for_each(|entity| {
             commands.entity(entity).despawn();
         });
