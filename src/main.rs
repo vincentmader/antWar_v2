@@ -167,7 +167,7 @@ fn setup(
             z: -1.0,
         };
         commands.spawn((
-            Food::Fungi(200),
+            Food::Fungi(200), // TODO Duplicate definition of amount?
             Amount(10.0),
             SpriteBundle {
                 texture: asset_server.load("img/fungus.png"),
