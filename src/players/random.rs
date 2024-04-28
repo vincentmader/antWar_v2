@@ -2,15 +2,22 @@ use std::f32::consts::PI;
 
 use bevy::math::{Quat, Vec3};
 
-use crate::{AntAction, Food, Pheromone, Player};
+use crate::{ant::components::Cargo, Abilities, AntAction, Food, Pheromone, Player};
 
 pub struct Random;
 
 impl Random {
     pub fn ant_action(
-        _velocity: &Vec3,
-        nearby_pheromones: &[(Pheromone, Player, Vec3)],
-        nearby_food: &[(Food, Vec3)],
+        _direction: &Vec3,
+        _speed: f32,
+        _age: f32,
+        _cargo: &Cargo,
+        _player: Player,
+        _abilities: &Abilities,
+
+        _nearby_pheromones: &[(Vec3, Pheromone, Player)],
+        _nearby_food: &[(Vec3, Food)],
+        _colonies: &[(Vec3, Player)],
     ) -> AntAction {
         let p = rand::random::<f32>();
         if p < 0.99 {
