@@ -1,8 +1,3 @@
-use std::{
-    collections::BTreeMap,
-    sync::{RwLock, RwLockReadGuard},
-};
-
 use bevy::{
     app::{Plugin, Startup, Update},
     asset::Handle,
@@ -12,7 +7,7 @@ use bevy::{
         entity::Entity,
         query::With,
         schedule::IntoSystemConfigs,
-        system::{Commands, ParallelCommands, Query, Res, Resource},
+        system::{Commands, ParallelCommands, Query, Res},
     },
     math::Vec3,
     prelude::default,
@@ -20,7 +15,6 @@ use bevy::{
     sprite::{ColorMaterial, MaterialMesh2dBundle, Mesh2dHandle},
     transform::components::Transform,
 };
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{Age, Player, WorldSize};
 

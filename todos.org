@@ -18,10 +18,18 @@ Ant Classes: (per player)
 Ideas:
 
 Next TODOs:
-- [ ] Ant Hill
-  + Queen lives there
-- [ ] pick up food
-- [ ] bring food to ant hill
+- [x] Ant Colony.
+- [x] Pick up food.
+- [x] Deliver food at Ant Colony.
+- [ ] Queen lives in the Ant Colony.
+- [ ] Queen can spawn new Ants.
+- [ ] Ants have hunger.
+- [ ] Ants can die of hunger.
+- [ ] Ants can die of old age.
+- [ ] Players have an ID (for teams).
+- [ ] Ants can kill other ants.
+- [ ] Ants can carry dead ants.
+- [ ] Ants can eat dead ants.
 
 Natural Player
 - [ ] follow pheromones

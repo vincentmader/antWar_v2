@@ -27,7 +27,7 @@ impl Natural {
     ) -> AntAction {
         if let Cargo::Food {
             typ: _f,
-            amound: _a,
+            amount: _a,
         } = cargo
         {
             // ====== check for home colony

@@ -29,7 +29,7 @@ pub struct Direction(pub Vec3);
 
 #[derive(Component)]
 pub enum Cargo {
-    Food { typ: Food, amound: Amount },
+    Food { typ: Food, amount: Amount },
     Empty,
 }
 

@@ -11,6 +11,11 @@ pub struct Age(pub f32);
 #[derive(Component, Deref, DerefMut)]
 pub struct Amount(pub AtomicU64);
 
+impl Clone for Amount {
+    fn clone(&self) -> Self {
+        Self(AtomicU64::new(self.0.load(Ordering::SeqCst)))
+    }
+}
 impl Amount {
     pub fn take(&self, mut amount: u64) -> Self {
         loop {

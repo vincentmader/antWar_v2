@@ -26,11 +26,13 @@ use self::{
     abilities::Vision,
     bundle::AntBundle,
     components::{Abilities, Ant, Cargo, Direction, Speed},
+    utils::spawn_cargo,
 };
 
 mod abilities;
 mod bundle;
 pub mod components;
+pub mod utils;
 
 pub enum CargoType {
     // type of food and position
@@ -171,6 +173,7 @@ fn ant_actions(
     commands: ParallelCommands,
     color_handles: Res<ColorHandles>,
     phr_mesh_handle: Res<PheromoneMeshHandle>,
+    asset_server: Res<AssetServer>,
     // phr_list: Res<PheromoneList>,
     // world_size: Res<WorldSize>,
 ) {
@@ -285,6 +288,14 @@ fn ant_actions(
                 // TODO: use Events but how to send them in parallel??
                 match action {
                     AntAction::DropCargo => {
+                        commands.command_scope(|mut commands| {
+                            spawn_cargo(
+                                commands,
+                                &asset_server,
+                                &ant_cargo,
+                                ant_transform.translation,
+                            );
+                        });
                         *ant_cargo = Cargo::Empty;
                     }
                     AntAction::PickupCargo(ct, amnt) => match ct {
@@ -301,7 +312,7 @@ fn ant_actions(
 
                                 *ant_cargo = Cargo::Food {
                                     typ: ft,
-                                    amound: amount.take(amnt),
+                                    amount: amount.take(amnt),
                                 }
                             }
                         }
