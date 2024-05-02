@@ -41,7 +41,6 @@ fn handle_mouse_events(
         if projection.scale >= 1.0 {
             projection.scale = 1.0;
         }
-        println!("{}", scroll_factor);
 
         let window = window_query.get_single().unwrap();
         let scale = projection.scale;

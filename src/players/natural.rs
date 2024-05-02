@@ -98,7 +98,7 @@ impl Natural {
             if let Some((food_direction, food_type)) = neares_food
                 && food_direction.length() < 10.
             {
-                return AntAction::PickupCargo(CargoType::Food(*food_type, *food_direction));
+                return AntAction::PickupCargo(CargoType::Food(*food_type), 1);
             } else if let Some((food_direction, _ft)) = neares_food
                 && food_direction.angle_between(*direction) > 0.1
             {

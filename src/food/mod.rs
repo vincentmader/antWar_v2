@@ -1,9 +1,13 @@
+use std::sync::atomic::Ordering;
+
 use bevy::{
-    app::{Plugin, Startup},
+    app::{Plugin, Startup, Update},
     asset::AssetServer,
     ecs::{
+        entity::Entity,
+        query::With,
         schedule::IntoSystemConfigs,
-        system::{Commands, Res},
+        system::{Commands, ParallelCommands, Query, Res},
     },
     math::{Vec2, Vec3},
     prelude::default,
@@ -23,7 +27,8 @@ pub struct FoodPlugin;
 
 impl Plugin for FoodPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_systems(Startup, setup.after(crate::world::setup));
+        app.add_systems(Startup, setup.after(crate::world::setup))
+            .add_systems(Update, food_removal);
     }
 }
 
@@ -39,7 +44,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, world_size: Res
 
         commands.spawn(FoodBundle {
             food: Food::Fungi,
-            amount: Amount(10.0),
+            amount: 500.into(),
 
             sprite: SpriteBundle {
                 texture: asset_server.load("img/fungus.png"),
@@ -55,4 +60,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, world_size: Res
             },
         });
     }
+}
+
+fn food_removal(commands: ParallelCommands, query: Query<(Entity, &Amount), With<Food>>) {
+    query.par_iter().for_each(|(entity, amount)| {
+        if amount.load(Ordering::Relaxed) == 0 {
+            commands.command_scope(move |mut commands| {
+                commands.entity(entity).despawn();
+            });
+        }
+    })
 }
