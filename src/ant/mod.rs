@@ -10,12 +10,12 @@ use bevy::{
     },
     math::{Quat, Vec2, Vec3},
     prelude::default,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle, Sprite, SpriteBundle},
+    sprite::{Sprite, SpriteBundle},
     time::Time,
     transform::components::Transform,
 };
 use rand::Rng;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
     world::resources::{ColorHandles, PheromoneMeshHandle, WorldSize},
