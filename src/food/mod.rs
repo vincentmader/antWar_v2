@@ -35,7 +35,7 @@ impl Plugin for FoodPlugin {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, world_size: Res<WorldSize>) {
     let mut rng = rand::thread_rng();
 
-    for _ in 0..5 {
+    for _ in 0..50 {
         let position = Vec3::new(
             rng.gen_range((-world_size.0 / 2f32)..(world_size.0 / 2.)),
             rng.gen_range((-world_size.1 / 2f32)..(world_size.1 / 2.)),

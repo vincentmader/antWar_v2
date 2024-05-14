@@ -56,8 +56,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, world_size: Res
         let colony_size = 50. + 15. * rng.gen::<f32>();
 
         let colony_position = Vec3::new(
-            rng.gen_range((-world_size.0 / 2.)..(world_size.0 / 2.)),
-            rng.gen_range((-world_size.1 / 2.)..(world_size.1 / 2.)),
+            0., 0., // TODO
+            // rng.gen_range((-world_size.0 / 2.)..(world_size.0 / 2.)),
+            // rng.gen_range((-world_size.1 / 2.)..(world_size.1 / 2.)),
             0.,
         );
 
